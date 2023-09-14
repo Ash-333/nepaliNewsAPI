@@ -4,7 +4,7 @@ const axios = require('axios');
 const xml2js = require('xml2js');
 const { JSDOM } = require('jsdom');
 require('dotenv').config();
-
+const port = process.env.PORT || 3000;
 
 const app = express();
 
@@ -118,7 +118,7 @@ async function startServer() {
   await startScheduler();
 
   app.listen(3000, () => {
-    console.log(`Server started on port 3000`);
+    console.log(`Server started on port ${port}`);
   });
 }
 
