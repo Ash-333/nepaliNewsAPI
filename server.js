@@ -4,12 +4,12 @@ const axios = require('axios');
 const xml2js = require('xml2js');
 const { JSDOM } = require('jsdom');
 require('dotenv').config();
-const port = process.env.PORT || 3000;
+
 
 const app = express();
 
 // Initialize MongoDB Atlas connection
-const client = new MongoClient(process.env.MONGODB_URL);
+const client = new MongoClient("mongodb+srv://akamat62:apple23@cluster0.czjhohp.mongodb.net/?retryWrites=true&w=majority");
 
 // Specify the MongoDB database and collection
 let collection;
@@ -118,7 +118,7 @@ async function startServer() {
   await startScheduler();
 
   app.listen(3000, () => {
-    console.log(`Server started on port ${port}`);
+    console.log(`Server started on port 3000`);
   });
 }
 
