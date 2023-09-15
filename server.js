@@ -32,6 +32,7 @@ async function connectToDatabase() {
 async function fetch_data(url) {
   try {
     // Fetch XML data from the URL
+    console.log(`running fetch on ${url}`)
     const response = await axios.get(url);
     if (response.status === 200) {
       const xml_data = response.data;
@@ -49,6 +50,7 @@ async function fetch_data(url) {
         // Check if the item with the same link already exists in the collection
         const existing_item = await collection.findOne({ link });
         if (existing_item === null) {
+          console.log(`found new item at ${url}`)
           // Extract image URL from <content:encoded> and <img> elements
           const encoded_content = item_elem['content:encoded'][0];
           if (encoded_content) {
@@ -68,6 +70,9 @@ async function fetch_data(url) {
             await collection.insertOne(new_item_data);
           }
         }
+        else{
+          console.log(`duplicate element from ${title}`)
+        }
       }
     }
   } catch (error) {
@@ -76,18 +81,18 @@ async function fetch_data(url) {
 }
 
 // Create a scheduler to periodically update data
-async function startScheduler() {
-  await fetch_data(tele_url);
-  await fetch_data(online_url);
+// async function startScheduler() {
+//   await fetch_data(tele_url);
+//   await fetch_data(online_url);
 
-  setInterval(async () => {
-    await fetch_data(tele_url);
-  }, 1 * 60 * 1000); // Run every 5 minutes
+//   setInterval(async () => {
+//     await fetch_data(tele_url);
+//   }, 1 * 60 * 1000); // Run every 5 minutes
 
-  setInterval(async () => {
-    await fetch_data(online_url);
-  }, 2 * 60 * 1000); // Run every 7 minutes
-}
+//   setInterval(async () => {
+//     await fetch_data(online_url);
+//   }, 2 * 60 * 1000); // Run every 7 minutes
+// }
 
 // ...
 
@@ -130,7 +135,7 @@ async function startServer() {
   setInterval(async () => {
     await fetch_data(tele_url);
     await fetch_data(online_url);
-  }, 30 * 60 * 1000); // Run every 5 minutes
+  }, 15 * 60 * 1000); // Run every 5 minutes
 }
 
 startServer();
