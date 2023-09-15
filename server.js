@@ -30,7 +30,6 @@ async function connectToDatabase() {
 
 // Function to fetch data from a given URL
 async function fetch_data(url) {
-  console.log(`Fetch data invoked on: ${url}`)
   try {
     // Fetch XML data from the URL
     const response = await axios.get(url);
@@ -50,7 +49,6 @@ async function fetch_data(url) {
         // Check if the item with the same link already exists in the collection
         const existing_item = await collection.findOne({ link });
         if (existing_item === null) {
-          console.log(`fetched: ${link}`);
           // Extract image URL from <content:encoded> and <img> elements
           const encoded_content = item_elem['content:encoded'][0];
           if (encoded_content) {
@@ -69,9 +67,6 @@ async function fetch_data(url) {
             // Insert the new item into the collection
             await collection.insertOne(new_item_data);
           }
-        }
-        else{
-          console.log(`already existed: ${link}`)
         }
       }
     }
@@ -135,7 +130,7 @@ async function startServer() {
   setInterval(async () => {
     await fetch_data(tele_url);
     await fetch_data(online_url);
-  }, 10 * 60 * 1000); // Run every 5 minutes
+  }, 30 * 60 * 1000); // Run every 5 minutes
 }
 
 startServer();
