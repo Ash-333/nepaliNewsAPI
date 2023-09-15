@@ -4,7 +4,7 @@ const axios = require('axios');
 const xml2js = require('xml2js');
 const { JSDOM } = require('jsdom');
 require('dotenv').config();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 const app = express();
 
@@ -14,9 +14,9 @@ const client = new MongoClient("mongodb+srv://akamat62:apple23@cluster0.czjhohp.
 // Specify the MongoDB database and collection
 let collection;
 
+const tele_url = "https://telegraphnepal.com/feed/";
+const online_url = "https://english.onlinekhabar.com/feed/";
 
-const tele_url = "http://telegraphnepal.com/feed/"  
-const online_url = "http://english.onlinekhabar.com/feed/" 
 async function connectToDatabase() {
   try {
     await client.connect();
@@ -30,6 +30,7 @@ async function connectToDatabase() {
 
 // Function to fetch data from a given URL
 async function fetch_data(url) {
+  console.log(`Fetch data invoked on: ${url}`)
   try {
     // Fetch XML data from the URL
     const response = await axios.get(url);
@@ -69,6 +70,9 @@ async function fetch_data(url) {
             await collection.insertOne(new_item_data);
           }
         }
+        else{
+          console.log(`already existed: ${link}`)
+        }
       }
     }
   } catch (error) {
@@ -83,11 +87,11 @@ async function startScheduler() {
 
   setInterval(async () => {
     await fetch_data(tele_url);
-  }, 5 * 60 * 1000); // Run every 5 minutes
+  }, 1 * 60 * 1000); // Run every 5 minutes
 
   setInterval(async () => {
     await fetch_data(online_url);
-  }, 7 * 60 * 1000); // Run every 7 minutes
+  }, 2 * 60 * 1000); // Run every 7 minutes
 }
 
 // ...
@@ -104,9 +108,10 @@ app.get('/items', async (req, res) => {
       description: item.description,
       img_url: item.img_url,
     }));
+    const reversedItemList = item_list.reverse();
 
     // Return the list of items as JSON
-    res.json(item_list);
+    res.json(reversedItemList);
   } catch (error) {
     console.error('Error retrieving items:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -115,11 +120,22 @@ app.get('/items', async (req, res) => {
 
 async function startServer() {
   await connectToDatabase();
-  await startScheduler();
 
   app.listen(port, () => {
     console.log(`Server started on port ${port}`);
   });
+
+  // Invoke fetch_data initially after 5 seconds
+  setTimeout(async () => {
+    await fetch_data(tele_url);
+    await fetch_data(online_url);
+  }, 5000);
+
+  // Set up recurring fetch_data calls every 5 minutes
+  setInterval(async () => {
+    await fetch_data(tele_url);
+    await fetch_data(online_url);
+  }, 10 * 60 * 1000); // Run every 5 minutes
 }
 
 startServer();
