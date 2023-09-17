@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient } = require('mongodb');
+const mongoose = require('mongoose');
 const axios = require('axios');
 const xml2js = require('xml2js');
 const { JSDOM } = require('jsdom');
@@ -9,30 +9,30 @@ const port = process.env.PORT;
 const app = express();
 
 // Initialize MongoDB Atlas connection
-const client = new MongoClient("mongodb+srv://akamat62:apple23@cluster0.czjhohp.mongodb.net/?retryWrites=true&w=majority");
+mongoose.connect(process.env.MONOGO_DB_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
-// Specify the MongoDB database and collection
-let collection;
+// Create a Mongoose schema for the news items
+const newsItemSchema = new mongoose.Schema({
+  title: String,
+  link: String,
+  description: String,
+  img_url: String,
+});
+
+// Create a Mongoose model based on the schema
+const NewsItem = mongoose.model('NewsItem', newsItemSchema);
 
 const tele_url = "https://telegraphnepal.com/feed/";
 const online_url = "https://english.onlinekhabar.com/feed/";
-
-async function connectToDatabase() {
-  try {
-    await client.connect();
-    const db = client.db('News');
-    collection = db.collection('items');
-    console.log('Connected to MongoDB Atlas');
-  } catch (error) {
-    console.error('Error connecting to MongoDB Atlas:', error);
-  }
-}
 
 // Function to fetch data from a given URL
 async function fetch_data(url) {
   try {
     // Fetch XML data from the URL
-    console.log(`running fetch on ${url}`)
+    console.log(`running fetch on ${url}`);
     const response = await axios.get(url);
     if (response.status === 200) {
       const xml_data = response.data;
@@ -48,9 +48,9 @@ async function fetch_data(url) {
         const description = item_elem.description[0];
 
         // Check if the item with the same link already exists in the collection
-        const existing_item = await collection.findOne({ link });
+        const existing_item = await NewsItem.findOne({ link });
         if (existing_item === null) {
-          console.log(`found new item at ${url}`)
+          console.log(`found new item: ${title}`);
           // Extract image URL from <content:encoded> and <img> elements
           const encoded_content = item_elem['content:encoded'][0];
           if (encoded_content) {
@@ -67,11 +67,11 @@ async function fetch_data(url) {
             };
 
             // Insert the new item into the collection
-            await collection.insertOne(new_item_data);
+            await NewsItem.create(new_item_data);
+            console.log(`added new item ${new_item_data}`)
           }
-        }
-        else{
-          console.log(`duplicate element from ${title}`)
+        } else {
+          console.log(`duplicate element from ${title}`);
         }
       }
     }
@@ -80,26 +80,10 @@ async function fetch_data(url) {
   }
 }
 
-// Create a scheduler to periodically update data
-// async function startScheduler() {
-//   await fetch_data(tele_url);
-//   await fetch_data(online_url);
-
-//   setInterval(async () => {
-//     await fetch_data(tele_url);
-//   }, 1 * 60 * 1000); // Run every 5 minutes
-
-//   setInterval(async () => {
-//     await fetch_data(online_url);
-//   }, 2 * 60 * 1000); // Run every 7 minutes
-// }
-
-// ...
-
 app.get('/items', async (req, res) => {
   try {
-    // Retrieve all data from the MongoDB Atlas collection
-    const items = await collection.find().toArray();
+    // Retrieve all data from the MongoDB collection
+    const items = await NewsItem.find().exec();
 
     // Format the items as a list of dictionaries
     const item_list = items.map((item) => ({
@@ -118,9 +102,11 @@ app.get('/items', async (req, res) => {
   }
 });
 
-async function startServer() {
-  await connectToDatabase();
+app.get('/', async (req, res) => {
+  res.json("msg : welcome to nepali news api t get list of new goto /items endpoint");
+});
 
+async function startServer() {
   app.listen(port, () => {
     console.log(`Server started on port ${port}`);
   });
