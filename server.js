@@ -121,7 +121,7 @@ async function startServer() {
   setInterval(async () => {
     await fetch_data(tele_url);
     await fetch_data(online_url);
-  }, 15 * 60 * 1000); // Run every 5 minutes
+  }, 1 * 60 * 1000); // Run every 5 minutes
 }
 
 startServer();
